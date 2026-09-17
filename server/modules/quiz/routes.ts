@@ -124,7 +124,7 @@ mappingRouter.get('/', async (_req, res) => {
   return res.json(ok(data));
 });
 
-function validateAnswerCombination(value: unknown): Record<string, string> {
+function validateAnswerCombination(value: unknown, isFallback = false): Record<string, string> {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     throw new ServiceError(400, 'VALIDATION_ERROR', 'answer_combination wajib object {step_id: option_id}');
   }
@@ -135,7 +135,8 @@ function validateAnswerCombination(value: unknown): Record<string, string> {
     }
     out[k] = v;
   }
-  if (!Object.keys(out).length) {
+  // Kombinasi kosong = catch-all — hanya sah untuk row fallback (match-all).
+  if (!Object.keys(out).length && !isFallback) {
     throw new ServiceError(400, 'VALIDATION_ERROR', 'answer_combination tidak boleh kosong');
   }
   return out;
@@ -144,7 +145,7 @@ function validateAnswerCombination(value: unknown): Record<string, string> {
 // POST /api/admin/quiz-mappings — body: answer_combination, product_id?, is_fallback?
 mappingRouter.post('/', async (req, res) => {
   const payload = req.body ?? {};
-  const answerCombination = validateAnswerCombination(payload.answer_combination);
+  const answerCombination = validateAnswerCombination(payload.answer_combination, payload.is_fallback === true);
 
   const values: Record<string, any> = {
     answer_combination: answerCombination,
@@ -184,8 +185,12 @@ mappingRouter.patch('/:id', async (req, res) => {
   const payload = req.body ?? {};
   const values: Record<string, any> = {};
 
+  // Hitung dulu status fallback target — dipakai validasi kombinasi (catch-all hanya untuk fallback).
+  const wasFallback = (existing as any).is_fallback === true;
+  const willBeFallback = 'is_fallback' in payload ? payload.is_fallback === true : wasFallback;
+
   if ('answer_combination' in payload) {
-    values.answer_combination = validateAnswerCombination(payload.answer_combination);
+    values.answer_combination = validateAnswerCombination(payload.answer_combination, willBeFallback);
   }
   if ('product_id' in payload) {
     if (payload.product_id === null) {
@@ -204,11 +209,8 @@ mappingRouter.patch('/:id', async (req, res) => {
     }
   }
 
-  const wasFallback = (existing as any).is_fallback === true;
-  const willBeFallback = 'is_fallback' in payload ? payload.is_fallback === true : wasFallback;
-  values.is_fallback = willBeFallback;
-
   // Validasi kritis 4.3 — uncheck fallback pada SATU-SATUNYA fallback yang ada ditolak.
+  values.is_fallback = willBeFallback;
   if (wasFallback && !willBeFallback) {
     const fallbacks = await countFallbacks();
     if (fallbacks <= 1) {
