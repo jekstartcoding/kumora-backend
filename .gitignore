@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+admin/dist/
+
+# Environment — .env asli JANGAN pernah di-commit (secret key backend only)
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+
+# Tool metadata
+.freebuff/
