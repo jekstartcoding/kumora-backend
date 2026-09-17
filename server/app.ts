@@ -4,6 +4,10 @@ import { ok, fail } from './utils/response';
 import { ServiceError } from './utils/errors';
 import { requireAdmin } from './middlewares/auth';
 import productsRouter from './modules/products/routes';
+import { deleteImage, reorderImage } from './modules/products/images';
+import variantsRouter from './modules/variants/routes';
+import reviewsRouter from './modules/reviews/routes';
+import { mappingRouter, optionRouter } from './modules/quiz/routes';
 
 export function createApp() {
   const app = express();
@@ -39,8 +43,16 @@ export function createApp() {
     }
   });
 
-  // Fase 3.1 — seluruh endpoint /api/admin/* wajib lewat verifikasi JWT admin.
+  // Fase 3.1/4.x — seluruh endpoint /api/admin/* wajib lewat verifikasi JWT admin.
   app.use('/api/admin/products', requireAdmin, productsRouter);
+  app.use('/api/admin/variants', requireAdmin, variantsRouter);
+  app.use('/api/admin/reviews', requireAdmin, reviewsRouter);
+  app.use('/api/admin/quiz-options', requireAdmin, optionRouter);
+  app.use('/api/admin/quiz-mappings', requireAdmin, mappingRouter);
+
+  // Fase 4.1 — images (di luar prefix products karena endpoint plan begitu).
+  app.delete('/api/admin/images/:imageId', requireAdmin, deleteImage);
+  app.patch('/api/admin/images/:imageId/reorder', requireAdmin, reorderImage);
 
   // 404 JSON untuk route API yang tidak dikenal.
   app.use('/api', (_req, res) => {
@@ -51,6 +63,13 @@ export function createApp() {
   app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
     if (err instanceof ServiceError) {
       return res.status(err.status).json(fail(err.code, err.message));
+    }
+    // Error Multer (Fase 4.1): limit ukuran dan tipe file → 400 dengan pesan jelas.
+    if (err && typeof err === 'object' && 'code' in err && String((err as any).code).startsWith('LIMIT_')) {
+      return res.status(400).json(fail('FILE_TOO_LARGE', 'ukuran file melebihi batas 5MB'));
+    }
+    if (err instanceof Error && err.message.includes('jpg/png/webp')) {
+      return res.status(400).json(fail('INVALID_FILE_TYPE', err.message));
     }
     // eslint-disable-next-line no-console
     console.error('[unhandled]', err);

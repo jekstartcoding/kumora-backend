@@ -1,11 +1,17 @@
-// Fase 4 — Multer, untuk terima file sebelum diteruskan ke Supabase Storage.
-//
-// Implementasi penuh di Fase 4.1. Stub ini hanya menjaga struktur folder sesuai plan 0.1.
-import type { Request, Response, NextFunction } from 'express';
+// Fase 4.1 — Multer, untuk terima file sebelum diteruskan ke Supabase Storage.
+// Validasi: hanya tipe gambar umum (jpg/png/webp), ukuran maksimal 5MB supaya
+// Storage tidak membengkak tanpa kontrol.
+import multer from 'multer';
 
-export function upload(_req: Request, res: Response, _next: NextFunction) {
-  return res.status(501).json({
-    success: false,
-    error: { code: 'NOT_IMPLEMENTED', message: 'Upload middleware belum diimplementasikan (Fase 4)' },
-  });
-}
+const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp'];
+
+export const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  fileFilter: (_req, file, cb) => {
+    if (!ALLOWED_MIME.includes(file.mimetype)) {
+      return cb(new Error('Hanya file gambar jpg/png/webp yang diizinkan'));
+    }
+    return cb(null, true);
+  },
+});

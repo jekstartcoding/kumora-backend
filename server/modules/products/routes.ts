@@ -13,6 +13,7 @@ import {
   slugify,
   validateProductPayload,
 } from './service';
+import { deleteImage, reorderImage, uploadImageHandler } from './images';
 
 const router = Router();
 
@@ -188,14 +189,38 @@ router.patch('/:id', async (req, res) => {
 });
 
 // DELETE /api/admin/products/:id — hapus produk (cascade ke images/variants/reviews)
+// Fase 4.1: file di Storage ikut dihapus supaya tidak ada file orphan menumpuk di bucket.
 router.delete('/:id', async (req, res) => {
   const { id } = req.params;
   if (!isUuid(id)) throw new ServiceError(404, 'NOT_FOUND', 'produk tidak ditemukan');
   await getProductOr404(id);
+
+  const { data: images } = await supabase
+    .from('product_images')
+    .select('url')
+    .eq('product_id', id);
+
   const { error } = await supabase.from('products').delete().eq('id', id);
   if (error) throw mapDbError(error);
+
+  const paths = (images ?? [])
+    .map((r: any) => r.url)
+    .map((url: string) => {
+      const marker = `/object/public/product-images/`;
+      const idx = url.indexOf(marker);
+      return idx === -1 ? null : url.substring(idx + marker.length);
+    })
+    .filter((p): p is string => p !== null);
+  if (paths.length) {
+    const { error: rmErr } = await supabase.storage.from('product-images').remove(paths);
+    if (rmErr) throw new ServiceError(500, 'STORAGE_ERROR', rmErr.message);
+  }
+
   return res.json(ok({ id, deleted: true }));
 });
+
+// Fase 4.1 — upload gambar produk: POST /api/admin/products/:id/images
+router.post('/:id/images', ...uploadImageHandler);
 
 // PATCH /api/admin/products/:id/variants/:variantId/set-default (3.3)
 // Satu transaction via function SQL 0003: meng-unset default lain dan men-set
