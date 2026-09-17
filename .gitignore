@@ -19,3 +19,7 @@ Thumbs.db
 
 # Tool metadata
 .freebuff/
+
+# Local test artifacts (jangan pernah commit)
+.kumora-*.tmp
+.kumora-test-*.sh

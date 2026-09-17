@@ -1,0 +1,206 @@
+{
+  "info": {
+    "name": "Kumora Admin — Products (Fase 3)",
+    "description": "Collection untuk menguji CRUD Products admin API. Set SUPABASE_URL dan SUPABASE_SECRET_KEY pada environment Postman. Endpoint /api/admin/* membutuhkan JWT admin di variabel accessToken (Fase 5 menambahkan helper login).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "productId", "value": "" },
+    { "key": "variantId", "value": "" },
+    { "key": "accessToken", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Health check",
+      "request": { "method": "GET", "url": "{{baseUrl}}/health" }
+    },
+    {
+      "name": "Products — list",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": {
+          "raw": "{{baseUrl}}/api/admin/products",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "admin", "products"]
+        }
+      }
+    },
+    {
+      "name": "Products — list filter category=pillows",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": {
+          "raw": "{{baseUrl}}/api/admin/products?category=pillows",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "admin", "products"],
+          "query": [{ "key": "category", "value": "pillows" }]
+        }
+      }
+    },
+    {
+      "name": "Products — create (valid, dengan images+variants+reviews)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const body = pm.response.json();",
+              "if (body.success && body.data && body.data.id) {",
+              "  pm.collectionVariables.set('productId', body.data.id);",
+              "  const def = (body.data.product_variants || []).find(v => v.is_default);",
+              "  if (def) pm.collectionVariables.set('variantId', def.id);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Bantal Memory Foam Classic\",\n  \"category\": \"pillows\",\n  \"price\": 249000,\n  \"sensory_descriptor\": \"Lembut, slow-rebound\",\n  \"firmness_rating\": 3,\n  \"fill_material\": \"Memory foam\",\n  \"fill_weight_equivalent\": \"800g kapas\",\n  \"delivery_estimate\": \"2-4 hari kerja\",\n  \"return_policy_text\": \"Garansi 30 hari tukar\",\n  \"gift_safe\": true,\n  \"gift_safe_note\": \"Dikemas dengan kertas bebas label\",\n  \"brand_story_line\": \"Dirancang untuk tidur nyenyak\",\n  \"description\": \"Bantal memory foam dengan kontur ergonomis.\",\n  \"tags\": [],\n  \"images\": [\n    { \"url\": \"https://example.com/lifestyle-1.jpg\", \"image_type\": \"lifestyle\", \"order_index\": 0 },\n    { \"url\": \"https://example.com/texture-1.jpg\", \"image_type\": \"texture\", \"order_index\": 0 }\n  ],\n  \"variants\": [\n    { \"label\": \"Firm — 60x40cm\", \"price\": 249000, \"is_default\": true },\n    { \"label\": \"Soft — 60x40cm\", \"price\": 239000, \"is_default\": false }\n  ],\n  \"reviews\": [\n    { \"author\": \"Rina\", \"rating\": 5, \"comment\": \"Enak banget\", \"sleep_position\": \"Menyamping\", \"body_type\": \"Sedang\" }\n  ]\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/admin/products",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "admin", "products"]
+        }
+      }
+    },
+    {
+      "name": "Products — create category invalid (harap 400)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Sofa Bed X\",\n  \"category\": \"sofas\",\n  \"price\": 1,\n  \"sensory_descriptor\": \"x\",\n  \"firmness_rating\": 3,\n  \"fill_material\": \"x\",\n  \"fill_weight_equivalent\": \"x\",\n  \"delivery_estimate\": \"x\",\n  \"return_policy_text\": \"x\",\n  \"brand_story_line\": \"x\",\n  \"description\": \"x\",\n  \"images\": [{ \"url\": \"https://example.com/t.jpg\", \"image_type\": \"texture\" }],\n  \"variants\": [{ \"label\": \"Default\", \"price\": 1, \"is_default\": true }]\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/admin/products",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "admin", "products"]
+        }
+      }
+    },
+    {
+      "name": "Products — create gift_safe tanpa note (harap 400)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Bantal Gift\",\n  \"category\": \"pillows\",\n  \"price\": 100000,\n  \"sensory_descriptor\": \"x\",\n  \"firmness_rating\": 3,\n  \"fill_material\": \"x\",\n  \"fill_weight_equivalent\": \"x\",\n  \"delivery_estimate\": \"x\",\n  \"return_policy_text\": \"x\",\n  \"gift_safe\": true,\n  \"brand_story_line\": \"x\",\n  \"description\": \"x\",\n  \"images\": [{ \"url\": \"https://example.com/t.jpg\", \"image_type\": \"texture\" }],\n  \"variants\": [{ \"label\": \"Default\", \"price\": 1, \"is_default\": true }]\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/admin/products",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "admin", "products"]
+        }
+      }
+    },
+    {
+      "name": "Products — create tanpa texture image (harap 400 + rollback)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Bantal Tanpa Texture\",\n  \"category\": \"pillows\",\n  \"price\": 100000,\n  \"sensory_descriptor\": \"x\",\n  \"firmness_rating\": 3,\n  \"fill_material\": \"x\",\n  \"fill_weight_equivalent\": \"x\",\n  \"delivery_estimate\": \"x\",\n  \"return_policy_text\": \"x\",\n  \"brand_story_line\": \"x\",\n  \"description\": \"x\",\n  \"images\": [{ \"url\": \"https://example.com/l.jpg\", \"image_type\": \"lifestyle\" }],\n  \"variants\": [{ \"label\": \"Default\", \"price\": 1, \"is_default\": true }]\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/admin/products",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "admin", "products"]
+        }
+      }
+    },
+    {
+      "name": "Products — detail (join images/variants/reviews)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": {
+          "raw": "{{baseUrl}}/api/admin/products/{{productId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "admin", "products", "{{productId}}"]
+        }
+      }
+    },
+    {
+      "name": "Products — update harga & deskripsi",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"price\": 259000,\n  \"description\": \"Deskripsi diperbarui.\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/admin/products/{{productId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "admin", "products", "{{productId}}"]
+        }
+      }
+    },
+    {
+      "name": "Variants — set default (harap tepat 1 default)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": { "mode": "raw", "raw": "{}" },
+        "url": {
+          "raw": "{{baseUrl}}/api/admin/products/{{productId}}/variants/{{variantId}}/set-default",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "admin", "products", "{{productId}}", "variants", "{{variantId}}", "set-default"]
+        }
+      }
+    },
+    {
+      "name": "Products — tanpa token (harap 401)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/admin/products",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "admin", "products"]
+        }
+      }
+    },
+    {
+      "name": "Products — delete",
+      "request": {
+        "method": "DELETE",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": {
+          "raw": "{{baseUrl}}/api/admin/products/{{productId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "admin", "products", "{{productId}}"]
+        }
+      }
+    }
+  ]
+}
