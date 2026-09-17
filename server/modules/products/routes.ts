@@ -43,19 +43,36 @@ function pickProductFields(payload: Record<string, any>): Record<string, any> {
   return out;
 }
 
-// GET /api/admin/products?category= — list semua produk (3.1)
+// GET /api/admin/products?category= — list semua produk (3.1).
+// Untuk tabel admin (7.1: thumbnail + jumlah variant), list dikembalikan sebagai
+// view-model dengan lifestyle_thumbnail (lifestyle image pertama) dan variant_count.
 router.get('/', async (req, res) => {
   const { category } = req.query;
   if (category !== undefined) {
     validateProductPayload({ category });
   }
-  let query = supabase.from('products').select('*').order('created_at', { ascending: false });
+  let query = supabase
+    .from('products')
+    .select('*, product_images(id, url, image_type, order_index), product_variants(id)')
+    .order('created_at', { ascending: false });
   if (typeof category === 'string' && category !== '') {
     query = query.eq('category', category);
   }
   const { data, error } = await query;
   if (error) throw mapDbError(error);
-  return res.json(ok(data));
+
+  const rows = (data ?? []).map((p: any) => {
+    const { product_images, product_variants, ...rest } = p;
+    const lifestyle = (product_images ?? [])
+      .filter((i: any) => i.image_type === 'lifestyle')
+      .sort((a: any, b: any) => a.order_index - b.order_index);
+    return {
+      ...rest,
+      lifestyle_thumbnail: lifestyle[0]?.url ?? null,
+      variant_count: (product_variants ?? []).length,
+    };
+  });
+  return res.json(ok(rows));
 });
 
 // GET /api/admin/products/:id — detail + images, variants, reviews (join)
@@ -130,9 +147,16 @@ router.post('/', async (req, res) => {
       if (err) throw mapDbError(err);
     }
 
-    // Invariant 1.2 — ditegakkan sejak create (dibutuhkan untuk "hard reject" di Fase 7.4).
-    await assertHasTextureImage(productId);
-    await assertExactlyOneDefaultVariant(productId);
+    // Invariant 1.2 — ditegakkan atas data yang DISERTAKAN dalam payload:
+    // kalau images dikirim, wajib ada texture; kalau variants dikirim, tepat 1 default.
+    // Payload tanpa images (workflow upload-deferred dari admin form) tidak di-assert di sini —
+    // enforcement penuh tetap berlaku di PATCH produk dan delete image (hard reject, Fase 7.4).
+    if (Array.isArray(payload.images)) {
+      await assertHasTextureImage(productId);
+    }
+    if (Array.isArray(payload.variants)) {
+      await assertExactlyOneDefaultVariant(productId);
+    }
 
     return res.status(201).json(ok(created));
   } catch (err) {
