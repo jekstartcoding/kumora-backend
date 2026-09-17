@@ -314,29 +314,42 @@ Semua endpoint di atas **wajib** lewat `middlewares/auth.ts` (verifikasi JWT adm
 
 **Tujuan:** Membangun kerangka admin panel dengan pola resource seragam, terinspirasi struktur Filament (sidebar resource, tabel list, form generation).
 
-### 6.1 Struktur project admin panel (folder `admin/` di dalam repo `kumora-backend` yang sama)
+### 6.1 Struktur project admin panel
+
+> **REVISI ARSITEKTUR (pasca-implementasi Fase 10):** admin panel kini hidup di dalam
+> project frontend customer (`kumora-company-profile-web` → `src/admin/`), di-mount dari
+> `App.tsx` utama via route `/admin/*` (di luar Layout customer, dengan AuthGuard sesi
+> Supabase). Backend `kumora-backend` murni REST API (tanpa static serving admin).
+> Konsekuensinya: `apiClient.ts` memakai BASE URL ABSOLUT dari env `VITE_ADMIN_API_URL`,
+> dan backend mengizinkan origin frontend via `cors` dengan whitelist env `CORS_ORIGINS`
+> (tanpa wildcard). Admin panel diakses di `{URL FRONTEND}/admin`.
+
 ```
-kumora-backend/
-└── admin/
-    ├── src/
+kumora-company-profile-web/          # frontend customer + admin panel (satu app)
+└── src/
+    ├── admin/
+    │   ├── AdminRoutes.tsx          # routing /admin/* (di-mount dari App.tsx utama)
     │   ├── layouts/
-    │   │   └── AdminLayout.tsx        # sidebar navigasi resource + topbar (logout, user info)
+    │   │   └── AdminLayout.tsx      # sidebar navigasi resource + topbar (logout, user info)
     │   ├── components/
-    │   │   ├── ResourceTable.tsx      # tabel generik: kolom, sorting, aksi (edit/delete)
-    │   │   ├── ResourceForm.tsx       # form generator dari field schema, gaya Filament form builder
-    │   │   └── ImageUploader.tsx      # drag-drop upload, preview, reorder
+    │   │   ├── AuthGuard.tsx        # cek sesi Supabase Auth, redirect ke /admin/login
+    │   │   ├── ResourceTable.tsx    # tabel generik: kolom, sorting, aksi (edit/delete)
+    │   │   ├── ResourceForm.tsx     # form generator dari field schema, gaya Filament form builder
+    │   │   └── ImageUploader.tsx    # drag-drop upload, preview, reorder
     │   ├── resources/
     │   │   ├── products/
     │   │   ├── quizMappings/
     │   │   └── quizOptions/
-    │   ├── lib/
-    │   │   ├── supabaseClient.ts      # inisialisasi dengan Publishable key, untuk auth saja
-    │   │   └── apiClient.ts           # axios instance ke backend Express (base path relatif, karena satu origin), auto-attach JWT
-    │   └── App.tsx
-    ├── index.html
-    └── vite.config.ts
+    │   ├── pages/
+    │   │   └── LoginPage.tsx
+    │   └── lib/
+    │       ├── supabaseClient.ts    # inisialisasi dengan Publishable key, untuk auth saja
+    │       └── apiClient.ts         # axios instance ke backend Express (base URL absolut dari VITE_ADMIN_API_URL), auto-attach JWT
+    └── App.tsx                      # early-return <AdminRoutes /> untuk path /admin*
 ```
-- Karena admin panel dan backend satu repo dan (setelah Fase 10) satu origin deployment, `apiClient.ts` cukup memakai path relatif (`/api/admin/...`) tanpa perlu konfigurasi CORS lintas domain yang rumit.
+- Karena admin panel dan backend kini BEDA origin (deployment terpisah), `apiClient.ts`
+  memakai URL absolut (`${VITE_ADMIN_API_URL}/api/admin/...`) dan backend wajib
+  mengizinkan origin frontend via CORS (lihat 10.1).
 
 ### 6.2 Pola "Resource" (meniru konsep Filament Resource)
 Setiap resource (Product, Quiz Mapping, dst) didefinisikan sebagai satu config object:
@@ -438,14 +451,24 @@ src/lib/supabaseClient.ts   # anon key, read-only
 
 ## Fase 10 — Deployment (Railway) & Testing Akhir
 
-### 10.1 Deploy backend Express ke Railway
-- Environment variables di Railway: `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `PORT`. (`SUPABASE_PUBLISHABLE_KEY` dibutuhkan saat **build** admin panel, lihat 10.2 — bisa juga didaftarkan di Railway sebagai build-time env kalau build dijalankan di Railway.)
+> **REVISI ARSITEKTUR (pasca-implementasi):** backend kini **API-only service** — admin
+> panel tidak lagi di-serve Express (lihat revisi 6.1). Frontend customer (termasuk
+> admin panel di dalamnya) deploy sebagaimana rencana deployment frontend yang sudah
+> ada; backend tetap deploy terpisah ke Railway.
+
+### 10.1 Deploy backend Express ke Railway (API-only)
+- Environment variables di Railway: `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `PORT`, dan
+  `CORS_ORIGINS` — whitelist origin frontend (dev: `http://localhost:5174`, production:
+  domain frontend production) yang boleh memanggil `/api/*`. **Tanpa wildcard `*`.**
 - Health-check endpoint (`GET /health`) dipakai Railway untuk monitoring uptime.
 
-### 10.2 Build & serve admin panel dari Express (satu deployment, satu repo)
-- Build step: `npm run build:admin` menghasilkan `admin/dist/`.
-- `server/app.ts` menyajikan `admin/dist` sebagai static file di route `/admin`, dan API tetap di `/api/*` — satu proses Express, satu deployment Railway, tidak ada layanan hosting kedua.
-- Admin panel **tidak** perlu domain/subdomain terpisah dan tidak perlu di-index (tambahkan `robots.txt: disallow` sederhana di response static), karena hanya dipakai 2 orang lewat `https://<domain-kamu>/admin`.
+### 10.2 Admin panel di frontend ({URL FRONTEND}/admin)
+- Admin panel dibangun & di-deploy bersama frontend customer (satu build Vite, satu
+  deployment) — diakses di `https://<domain-frontend>/admin`, tanpa subdomain terpisah
+  dan tidak perlu di-index (tambahkan `robots.txt: disallow` di hosting frontend).
+- Env frontend: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` (situs customer, read-only),
+  `VITE_SUPABASE_PUBLISHABLE_KEY` (login admin), `VITE_ADMIN_API_URL` (base URL backend
+  Railway yang dipakai apiClient admin).
 
 ### 10.3 Testing akhir end-to-end
 - [ ] Login admin panel di environment production
@@ -455,7 +478,7 @@ src/lib/supabaseClient.ts   # anon key, read-only
 - [ ] Coba akses `/api/admin/*` tanpa token dari luar (curl/Postman) → 401, konfirmasi tidak ada celah bypass
 
 ### 10.4 Deliverable Fase 10
-- [ ] Backend & admin panel live di Railway
+- [ ] Backend (API-only) live di Railway; frontend + admin panel live di hosting frontend
 - [ ] Seluruh skenario 10.3 lulus
 - [ ] `DEPLOYMENT_NOTES.md` — cara re-deploy, cara tambah admin user baru, cara rollback migration kalau diperlukan
 
