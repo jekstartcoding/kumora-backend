@@ -1,4 +1,5 @@
 import express from 'express';
+import cors from 'cors';
 import { env } from './config/supabase';
 import { ok, fail } from './utils/response';
 import { ServiceError } from './utils/errors';
@@ -11,6 +12,26 @@ import { mappingRouter, optionRouter } from './modules/quiz/routes';
 
 export function createApp() {
   const app = express();
+
+  // Restrukturisasi arsitektur — admin panel kini hidup di frontend Kumora (origin
+  // berbeda), jadi backend wajib mengizinkan origin tersebut via CORS. Whitelist
+  // eksplisit dari env (KOMA dipisah koma) — TANPA wildcard '*'. Bila tidak ada
+  // origin yang diset (mis. uji lokal via curl/Postman), header CORS tak ditambahkan
+  // dan request non-browser tetap jalan normal.
+  const allowedOrigins = (process.env.CORS_ORIGINS ?? '')
+    .split(',')
+    .map((o) => o.trim().replace(/\/+$/, ''))
+    .filter(Boolean);
+  app.use(
+    cors({
+      origin(origin, callback) {
+        if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+        return callback(new Error(`Origin ${origin} tidak diizinkan oleh CORS`));
+      },
+      methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
+    })
+  );
 
   app.use(express.json());
 
