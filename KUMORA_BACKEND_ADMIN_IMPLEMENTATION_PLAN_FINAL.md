@@ -501,3 +501,26 @@ src/lib/supabaseClient.ts   # anon key, read-only
 | 10 | Deployment Railway & testing akhir | End-to-end |
 
 **Kunci keberhasilan strategi ini:** karena skala kecil (10-15 produk, 2 pengguna), godaan terbesar adalah "skip validasi karena toh cuma dipakai sendiri" — justru di sinilah risiko terbesar: kalau fallback quiz terhapus tanpa sadar, atau produk tanpa texture image ter-publish, dampaknya langsung terlihat di situs customer tanpa lapisan editorial lain yang menangkap kesalahan itu. Karena itu validasi bisnis di Fase 1.2/3.2/4.3 bukan sekadar "nice to have" meski timnya kecil — justru karena timnya kecil dan tidak ada proses review berlapis, validasi otomatis di backend menjadi satu-satunya jaring pengaman sebelum data salah tayang ke publik.
+
+---
+
+## Fase Lanjutan: CMS Konten Homepage & About
+
+Setelah Fase 0-10 dokumen ini selesai, pengembangan berlanjut dengan plan terpisah:
+**`KUMORA_CMS_IMPLEMENTATION_PLAN_FINAL.md`** — menambahkan kemampuan CMS untuk
+seluruh konten Homepage (8 section) dan About (6 section) yang awalnya hardcoded
+di frontend, supaya bisa diedit lewat admin panel tanpa deploy ulang kode.
+
+Cakupan plan lanjutan tersebut:
+- Migration `0005_cms_content.sql`, `0006_cms_rls.sql`, `0007_cms_images_bucket.sql`
+  (19 tabel CMS + RLS + bucket Storage khusus aset CMS)
+- Endpoint `/api/admin/cms/*` (14 singleton GET+PUT upsert, 6 list CRUD+reorder,
+  category-content PATCH per kategori) — melengkapi endpoint Fase 3-4 di dokumen ini
+- Sidebar admin panel dikelompokkan ulang: **Catalog** (Products, Quiz) dan
+  **CMS Konten** (sub-grup Homepage & About)
+- Frontend customer Homepage & About 100% membaca dari Supabase
+  (`src/lib/cms.ts`), dengan audit anti-hardcode sebagai deliverable
+
+Skema endpoint, pattern singleton (`id int default 1 check (id = 1)`), response
+envelope, dan pola resource config yang dipakai mengikuti konvensi yang
+didefinisikan di dokumen ini.
