@@ -23,6 +23,8 @@ const PRODUCT_FIELDS = [
   'category',
   'tags',
   'price',
+  'discount_percentage',
+  'discount_amount',
   'sensory_descriptor',
   'firmness_rating',
   'fill_material',
@@ -40,6 +42,11 @@ function pickProductFields(payload: Record<string, any>): Record<string, any> {
   for (const key of PRODUCT_FIELDS) {
     if (key in payload) out[key] = payload[key];
   }
+  // Normalisasi diskon HANYA bila field dikirim — jangan pernah menulis 0
+  // untuk field yang tidak dikirim, agar PATCH parsial tidak menghapus diskon
+  // yang sudah ada. Untuk create tanpa diskon, default 0 di DB yang mengisi.
+  if ('discount_percentage' in out) out.discount_percentage = Number(out.discount_percentage ?? 0);
+  if ('discount_amount' in out) out.discount_amount = Number(out.discount_amount ?? 0);
   return out;
 }
 
@@ -171,11 +178,26 @@ router.post('/', async (req, res) => {
 router.patch('/:id', async (req, res) => {
   const { id } = req.params;
   if (!isUuid(id)) throw new ServiceError(404, 'NOT_FOUND', 'produk tidak ditemukan');
-  await getProductOr404(id);
+  const existing = await getProductOr404(id);
 
   const payload: Record<string, any> = req.body ?? {};
   validateProductPayload(payload);
   const values = pickProductFields(payload);
+
+  // Validasi diskon harus melihat GABUNGAN payload + nilai DB yang tidak di-update
+  // (PATCH parsial: mengisi discount_percentage saja tidak boleh menyebabkan
+  //  produk berakhir dengan kedua diskon aktif karena discount_amount lama > 0).
+  // 'key in values' dipakai (bukan ??) karena nilai sah bisa 0.
+  validateProductPayload({
+    ...payload,
+    discount_percentage: 'discount_percentage' in values
+      ? values.discount_percentage
+      : (existing.discount_percentage ?? 0),
+    discount_amount: 'discount_amount' in values
+      ? values.discount_amount
+      : (existing.discount_amount ?? 0),
+    price: values.price ?? existing.price,
+  });
 
   // Slug hanya berubah kalau explicitly disediakan (menghindari silent breaking change — Prinsip #6).
   if (typeof payload.slug === 'string' && payload.slug.trim() !== '') {

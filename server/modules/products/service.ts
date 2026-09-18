@@ -78,6 +78,40 @@ export function validateProductPayload(payload: Record<string, any>): void {
       );
     }
   }
+  // Diskon: dua jenis (persen / nominal), hanya boleh salah satu yang aktif.
+  if ('discount_percentage' in payload) {
+    const pct = Number(payload.discount_percentage);
+    if (!Number.isFinite(pct) || pct < 0 || pct > 100) {
+      throw new ServiceError(400, 'INVALID_DISCOUNT', 'discount_percentage harus angka 0-100');
+    }
+  }
+  if ('discount_amount' in payload) {
+    const amt = Number(payload.discount_amount);
+    if (!Number.isFinite(amt) || amt < 0) {
+      throw new ServiceError(400, 'INVALID_DISCOUNT', 'discount_amount harus angka >= 0');
+    }
+  }
+  if (
+    Number(payload.discount_percentage ?? 0) > 0 &&
+    Number(payload.discount_amount ?? 0) > 0
+  ) {
+    throw new ServiceError(
+      400,
+      'DISCOUNT_EXCLUSIVE',
+      'Isi salah satu saja: discount_percentage ATAU discount_amount (tidak boleh keduanya)'
+    );
+  }
+  if (
+    'discount_amount' in payload &&
+    'price' in payload &&
+    Number(payload.discount_amount) > Number(payload.price)
+  ) {
+    throw new ServiceError(
+      400,
+      'INVALID_DISCOUNT',
+      'discount_amount tidak boleh lebih besar dari price'
+    );
+  }
 }
 
 // 1.2 #1 — setiap produk minimal 1 row product_images dengan image_type = 'texture'.
