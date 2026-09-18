@@ -9,6 +9,7 @@ import { deleteImage, reorderImage } from './modules/products/images';
 import variantsRouter from './modules/variants/routes';
 import reviewsRouter from './modules/reviews/routes';
 import { mappingRouter, optionRouter } from './modules/quiz/routes';
+import cmsRouter from './modules/cms/routes';
 
 export function createApp() {
   const app = express();
@@ -70,6 +71,8 @@ export function createApp() {
   app.use('/api/admin/reviews', requireAdmin, reviewsRouter);
   app.use('/api/admin/quiz-options', requireAdmin, optionRouter);
   app.use('/api/admin/quiz-mappings', requireAdmin, mappingRouter);
+  // Fase 3 plan CMS — seluruh endpoint /api/admin/cms/* di-balut requireAdmin.
+  app.use('/api/admin/cms', requireAdmin, cmsRouter);
 
   // Fase 4.1 — images (di luar prefix products karena endpoint plan begitu).
   app.delete('/api/admin/images/:imageId', requireAdmin, deleteImage);

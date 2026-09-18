@@ -1,0 +1,201 @@
+{
+  "info": {
+    "name": "Kumora Admin — CMS (plan CMS Fase 3)",
+    "description": "Collection untuk menguji endpoint CMS: 14 singleton (GET/PUT upsert), 6 list (GET/POST/PATCH/DELETE + reorder), dan category-content (GET + PATCH per kategori). Set variabel baseUrl dan accessToken (JWT admin dari Supabase Auth). Akses tanpa token harus 401.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "accessToken", "value": "" },
+    { "key": "itemId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Health check",
+      "request": { "method": "GET", "url": "{{baseUrl}}/health" }
+    },
+    {
+      "name": "CMS — GET singleton (contoh home-hero)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": { "raw": "{{baseUrl}}/api/admin/cms/home-hero", "host": ["{{baseUrl}}"], "path": ["api", "admin", "cms", "home-hero"] }
+      }
+    },
+    {
+      "name": "CMS — PUT singleton home-hero",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"hook\": \"Seni Istirahat yang Lebih Baik\",\n  \"title\": \"Tidur Lebih Nyenyak. Hidup Lebih Baik.\",\n  \"subtitle\": \"Kumora menghadirkan perlengkapan tidur dan kamar yang dirancang dengan penuh perhatian untuk kenyamanan yang lebih baik setiap hari.\",\n  \"cta_1_text\": \"Lihat Produk\",\n  \"cta_1_url\": \"/shop/pillows\",\n  \"cta_2_text\": \"Hubungi Kami\",\n  \"cta_2_url\": \"https://wa.me/6281234567890\"\n}" },
+        "url": { "raw": "{{baseUrl}}/api/admin/cms/home-hero", "host": ["{{baseUrl}}"], "path": ["api", "admin", "cms", "home-hero"] }
+      }
+    },
+    {
+      "name": "CMS — singleton lain (ganti slug)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": { "raw": "{{baseUrl}}/api/admin/cms/home-showcase-section", "host": ["{{baseUrl}}"], "path": ["api", "admin", "cms", "home-showcase-section"] }
+      }
+    },
+    {
+      "name": "Trust items — list",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": { "raw": "{{baseUrl}}/api/admin/cms/trust-items", "host": ["{{baseUrl}}"], "path": ["api", "admin", "cms", "trust-items"] }
+      }
+    },
+    {
+      "name": "Trust items — create",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"icon_name\": \"layers\",\n  \"title\": \"Judul item\",\n  \"description\": \"Deskripsi item\"\n}" },
+        "url": { "raw": "{{baseUrl}}/api/admin/cms/trust-items", "host": ["{{baseUrl}}"], "path": ["api", "admin", "cms", "trust-items"] }
+      }
+    },
+    {
+      "name": "Trust items — update",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"title\": \"Judul baru\"\n}" },
+        "url": { "raw": "{{baseUrl}}/api/admin/cms/trust-items/{{itemId}}", "host": ["{{baseUrl}}"], "path": ["api", "admin", "cms", "trust-items", "{{itemId}}"] }
+      }
+    },
+    {
+      "name": "Trust items — reorder (tanpa duplikat order_index)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"items\": [\n    { \"id\": \"<uuid-1>\", \"order_index\": 0 },\n    { \"id\": \"<uuid-2>\", \"order_index\": 1 }\n  ]\n}" },
+        "url": { "raw": "{{baseUrl}}/api/admin/cms/trust-items/reorder", "host": ["{{baseUrl}}"], "path": ["api", "admin", "cms", "trust-items", "reorder"] }
+      }
+    },
+    {
+      "name": "Trust items — delete",
+      "request": {
+        "method": "DELETE",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": { "raw": "{{baseUrl}}/api/admin/cms/trust-items/{{itemId}}", "host": ["{{baseUrl}}"], "path": ["api", "admin", "cms", "trust-items", "{{itemId}}"] }
+      }
+    },
+    {
+      "name": "Testimonials — list",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": { "raw": "{{baseUrl}}/api/admin/cms/testimonials", "host": ["{{baseUrl}}"], "path": ["api", "admin", "cms", "testimonials"] }
+      }
+    },
+    {
+      "name": "Testimonials — create",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"author_name\": \"Nama\",\n  \"author_location\": \"Kota\",\n  \"rating\": 5,\n  \"comment\": \"Komentar\",\n  \"is_published\": true\n}" },
+        "url": { "raw": "{{baseUrl}}/api/admin/cms/testimonials", "host": ["{{baseUrl}}"], "path": ["api", "admin", "cms", "testimonials"] }
+      }
+    },
+    {
+      "name": "Testimonials — toggle is_published",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"is_published\": false\n}" },
+        "url": { "raw": "{{baseUrl}}/api/admin/cms/testimonials/{{itemId}}", "host": ["{{baseUrl}}"], "path": ["api", "admin", "cms", "testimonials", "{{itemId}}"] }
+      }
+    },
+    {
+      "name": "Showcase products — list",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": { "raw": "{{baseUrl}}/api/admin/cms/showcase-products", "host": ["{{baseUrl}}"], "path": ["api", "admin", "cms", "showcase-products"] }
+      }
+    },
+    {
+      "name": "Showcase products — create (product_id dari tabel products)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"product_id\": \"<uuid-produk>\"\n}" },
+        "url": { "raw": "{{baseUrl}}/api/admin/cms/showcase-products", "host": ["{{baseUrl}}"], "path": ["api", "admin", "cms", "showcase-products"] }
+      }
+    },
+    {
+      "name": "Milestones — list",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": { "raw": "{{baseUrl}}/api/admin/cms/milestones", "host": ["{{baseUrl}}"], "path": ["api", "admin", "cms", "milestones"] }
+      }
+    },
+    {
+      "name": "Mission items — list",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": { "raw": "{{baseUrl}}/api/admin/cms/mission-items", "host": ["{{baseUrl}}"], "path": ["api", "admin", "cms", "mission-items"] }
+      }
+    },
+    {
+      "name": "Values — list",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": { "raw": "{{baseUrl}}/api/admin/cms/values", "host": ["{{baseUrl}}"], "path": ["api", "admin", "cms", "values"] }
+      }
+    },
+    {
+      "name": "Category content — list (3 kategori)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": { "raw": "{{baseUrl}}/api/admin/cms/category-content", "host": ["{{baseUrl}}"], "path": ["api", "admin", "cms", "category-content"] }
+      }
+    },
+    {
+      "name": "Category content — patch pillows",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"description\": \"Deskripsi kategori pillows\"\n}" },
+        "url": { "raw": "{{baseUrl}}/api/admin/cms/category-content/pillows", "host": ["{{baseUrl}}"], "path": ["api", "admin", "cms", "category-content", "pillows"] }
+      }
+    },
+    {
+      "name": "CMS — akses tanpa token (harus 401)",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/api/admin/cms/home-hero", "host": ["{{baseUrl}}"], "path": ["api", "admin", "cms", "home-hero"] }
+      }
+    }
+  ]
+}

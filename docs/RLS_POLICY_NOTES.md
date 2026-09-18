@@ -47,3 +47,25 @@ selesai (plan: Prinsip Kerja #2).
 3. Buat policy `select` publik **hanya jika** memang boleh dibaca customer.
 4. Jangan pernah buat policy write untuk peran publik.
 5. Uji: select Publishable key harus 200; insert Publishable key harus ditolak.
+
+## Tabel CMS (migration 0006_cms_rls.sql — plan CMS Fase 2)
+
+19 tabel CMS konten (Homepage & About) mengikuti pola yang sama: RLS aktif,
+public read lewat policy `public_read_<tabel>` `using (true)`, tanpa policy
+write untuk public.
+
+Homepage: `home_hero`, `home_showcase_section`, `home_showcase_products`,
+`home_philosophy_teaser`, `home_trust_section`, `home_trust_items`,
+`home_category_section`, `category_content`, `home_banner`,
+`home_testimonials_section`, `testimonials`, `home_final_cta`.
+
+About: `about_hero`, `about_story`, `about_milestones_section`,
+`about_milestones`, `about_vision_mission`, `about_mission_items`,
+`about_values_section`, `about_values`, `about_final_cta`.
+
+**Pengecualian `testimonials`:** policy `public_read_testimonials` pakai
+`using (is_published = true)` — baris dengan `is_published = false` tidak
+tampil ke customer (Publishable key), tapi tetap terlihat via Secret key
+(admin panel). Hasil verifikasi migration 0006: insert id=2 ke singleton
+ditolak `23514`; public read 200; public write ditolak `42501`; testimoni
+unpublished tersembunyi dari public & terlihat via secret.
