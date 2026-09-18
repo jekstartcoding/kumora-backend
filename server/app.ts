@@ -29,7 +29,8 @@ export function createApp() {
         if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
         return callback(new Error(`Origin ${origin} tidak diizinkan oleh CORS`));
       },
-      methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+      // PUT masuk daftar: endpoint singleton CMS (plan CMS Fase 3.1) memakai PUT upsert.
+      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization'],
     })
   );
