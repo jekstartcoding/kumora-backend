@@ -1,0 +1,23 @@
+# Render Blueprint — Kumora Backend (REST API)
+# Dipakai via Render Dashboard → New → Blueprint → pilih repo ini.
+# Semua env var `sync: false` wajib diisi manual di dashboard (jangan commit secret).
+services:
+  - type: web
+    name: kumora-backend
+    runtime: node
+    plan: free
+    region: singapore          # terdekat dari Indonesia; hapus/ganti jika ingin region lain
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "24"            # samakan dengan Node lokal (dev == prod)
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SECRET_KEY
+        sync: false
+      - key: SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
